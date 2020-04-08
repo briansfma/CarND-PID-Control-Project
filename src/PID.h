@@ -1,6 +1,8 @@
 #ifndef PID_H
 #define PID_H
 
+#include <deque>
+
 class PID {
  public:
   /**
@@ -38,6 +40,13 @@ class PID {
   double p_error;
   double i_error;
   double d_error;
+
+  /**
+   * PID "History" values
+   */
+  std::deque<double> prev_cte;
+  int have_data;
+  int history_size;
 
   /**
    * PID Coefficients
