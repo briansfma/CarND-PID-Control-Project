@@ -1,5 +1,70 @@
-# CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
+# PID for Steering Control Along a Path
+Udacity Self-Driving Car Engineer Nanodegree Program
+
+In this project our goal is to use PID controls only to have a car follow a predefined path around a track. We are provided only the distance (positive or negative) our car is off from the ideal path - from there, the car adjusts its
+steering angle automatically to try and maintain a close distance to the path.
+
+All is not simple, however - the path is often discontinuous, triggering the car to make sudden jerks in steering to try and correct its sudden error. The focus of this project is to balance between aggressively staying close to the ideal path and being able to dampen the sudden changes in path such that the final path driven is as smooth (and within the boundaries) as possible.
+
+[//]: # (Image References)
+[image1]: data-errors.jpg "CTE Spikes"
+[image2]: 2020-04-07_Frame.jpg "Runtime Example"
+
+## Basic Build Instructions
+
+Running the code requires connecting to the Udacity CarND Term 2 Simulator, which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases).
+
+This repository includes two files that can be used to set up and install [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO. Please see the uWebSocketIO Starter Guide page in the classroom within the EKF Project lesson for the required version and installation scripts.
+
+Once the install for uWebSocketIO is complete, the main program can be built and run by executing in the Linux bash:
+
+```
+$ git clone https://github.com/briansfma/CarND-PID-Control-Project
+$ cd CarND-PID-Control-Project
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make $*
+$ ./pid
+```
+
+## Running the Program
+
+If it is not running already, launch the project.
+
+```
+$ cd CarND-PID-Control-Project
+$ cd build
+$ ./pid
+```
+
+When `pid` has initialized successfully, it will output to terminal
+
+```
+Listening to port 4567
+```
+
+Launch the simulator `term2_sim.exe`. Select "Project 4: PID Controller" from the menu. Upon successful connection to the simulator, `pid` will output to terminal
+
+```
+Connected!!!
+```
+
+The simulator will automatically start.
+
+## Details
+
+The ego car normally uses straightforward PID controls to guide the steering towards the ideal path (minimizing error, denoted as `cte` in the code). The coefficient `Kd` for the differential error is set especially high to provide "damping" to the steering response, compromising a higher `cte` for a visually smoother line through the track. The `Kp` for proportional error is set relatively low to prevent overreacting to changes in path. The `Ki` for integral error is good for correcting bias, and also useful as an "inertial" factor for damping out sudden inputs. But since the track is not a constant target, using integral error normally causes the car to spiral out of control as soon as the track turns. This code changes the integral error implementation to limit the timeframe the PID controller "remembers". Thus it can react to a changing track, without having zero inertia to damp out sudden steering changes.
+
+Additionally, it was noticed early on that `cte` jumps suddenly throughout the lap, indicating that the path itself is discontinuous. `diff_cte` (`cte - previous_cte`) often spikes over 0.5 during runtime, but when the path is continuous, it should vary within the (-0.05, 0.05) range.
+
+![alt text][image1]
+
+In this situation, high `Kd` is a liability instead of a useful damping feature. If `diff_cte` is above 0.5, `Kd` = 4.0 so the steering input will instantly max out. So instead, when high `diff_cte` is encountered, the code switches to using PI control only, modifying the `Kp` coefficient to compensate for the lack of `Kd`.
+
+With this situational toggle implemented, the PID/PI controller is able to handle most discontinuities elegantly, and the car travels smoothly where it would otherwise jerk suddenly.
+
+[![alt text][image2]](2020-04-07.mp4 "Runtime Example")
 
 ---
 
@@ -28,71 +93,5 @@ Self-Driving Car Engineer Nanodegree Program
 
 Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
 
-## Basic Build Instructions
 
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
-
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
 
