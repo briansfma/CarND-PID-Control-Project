@@ -64,6 +64,8 @@ In this situation, high `Kd` is a liability instead of a useful damping feature.
 
 With this situational toggle implemented, the PID/PI controller is able to handle most discontinuities elegantly, and the car travels smoothly where it would otherwise jerk suddenly.
 
+(Click frame image to view/download video clip)
+
 [![alt text][image2]](2020-04-07.mp4 "Runtime Example")
 
 ---
