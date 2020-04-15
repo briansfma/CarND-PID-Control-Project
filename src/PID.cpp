@@ -1,6 +1,5 @@
 #include "PID.h"
 #include <iostream>
-#include <deque>
 #include <cmath>
 
 /**
@@ -20,7 +19,8 @@ void PID::Init(double Kp_, double Ki_, double Kd_) {
 	Kd = Kd_;
 
 	have_data = 0;
-	history_size = 15;
+	d_error = 0;
+	history_size = 10;
 }
 
 void PID::UpdateError(double cte) {
@@ -33,12 +33,26 @@ void PID::UpdateError(double cte) {
 	p_error = Kp * cte;
 
 	// Calculate D error and update "last seen CTE"
-	double diff_cte = cte - prev_cte.back();
-	d_error = (have_data > 0) * Kd * (diff_cte);
-	prev_cte.push_back(cte);
+	if (have_data) {
+		double diff_cte = cte - prev_cte.back();
 
-	// Data management - only keep 50pts to avoid the PID controller "remembering"
+		// Report CTE spikes (because they happen often)
+		// In the case that CTE spikes, the D error becomes a liability, so we
+		// take it out and effectively just use a PI controller for spikes
+		if (std::abs(diff_cte) > 0.1) {
+			std::cout << "---------------------------" << std::endl
+								<< "\t\tCTE DISCONTINUOUS > 0.1" << std::endl
+								<< "\t\t-------------------------\t";
+			p_error *= 2;
+			d_error = 0;
+		}
+		else
+			d_error = Kd * diff_cte;
+	}
+
+	// Data management - only keep 10pts to avoid the PID controller "remembering"
 	// unnecessary bias
+	prev_cte.push_back(cte);
 	if (have_data > history_size)
 		prev_cte.pop_front();
 	else
@@ -49,17 +63,7 @@ void PID::UpdateError(double cte) {
 	for (double e : prev_cte)
 		i_error += e;			// sum previous CTE's (up to last 50 only)
 	i_error *= Ki;
-	
-	// Report CTE spikes (because they happen often)
-	// In the case that CTE spikes, the D error becomes a liability, so we
-	// take it out and effectively just use a PI controller for spikes
-	if (std::abs(diff_cte) > 0.2) {
-		std::cout << "---------------------------" << std::endl
-							<< "\t\tCTE DISCONTINUOUS > 0.2" << std::endl
-							<< "\t\t-------------------------\t";
-		p_error *= 2;
-		d_error = 0;
-	}
+
 }
 
 double PID::TotalError() {
