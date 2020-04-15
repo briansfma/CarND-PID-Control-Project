@@ -56,11 +56,11 @@ The simulator will automatically start.
 
 The ego car normally uses straightforward PID controls to guide the steering towards the ideal path (minimizing error, denoted as `cte` in the code). The coefficient `Kd` for the differential error is set especially high to provide "damping" to the steering response, compromising a higher `cte` for a visually smoother line through the track. The `Kp` for proportional error acts as the "spring" in the system, so this has been set low to prevent overreacting to changes in path. The `Ki` for integral error is good for correcting bias, and also useful as an "inertial" factor for damping out sudden inputs. But since the track is not a constant target, using integral error normally causes the car to spiral out of control as soon as the track turns. This code changes the integral error implementation to limit the timeframe the PID controller "remembers". Thus it can react to a changing track, without having zero inertia to damp out sudden steering changes. `Kp`, `Kd`, and `Ki` were chosen by manual tuning - although Twiddle can get good settings for converging quickly, it causes the car to steer hyperactively in the simulator, so instead, visual smoothness was prioritized over low error.
 
-Additionally, it was noticed early on that `cte` jumps suddenly throughout the lap, indicating that the path itself is discontinuous. `diff_cte` (`cte - previous_cte`) often spikes over 0.5 during runtime, but when the path is continuous, it should vary within the (-0.05, 0.05) range.
+Additionally, it was noticed early on that `cte` jumps suddenly throughout the lap, indicating that the path itself is discontinuous. `diff_cte` (`cte - previous_cte`) often spikes over 0.1 during runtime, but when the path is continuous, it should vary within the (-0.05, 0.05) range.
 
 ![alt text][image1]
 
-In this situation, high `Kd` is a liability instead of a useful damping feature. If `diff_cte` is above 0.5, `Kd` = 4.0 so the steering input will instantly max out. So instead, when high `diff_cte` is encountered, the code switches to using PI control only, modifying the `Kp` coefficient to compensate for the lack of `Kd`.
+In this situation, high `Kd` is a liability instead of a useful damping feature. If `diff_cte` is above 0.1, `Kd` = 4.0 so the steering input will instantly max out. So instead, when high `diff_cte` is encountered, the code switches to using PI control only, modifying the `Kp` coefficient to compensate for the lack of `Kd`.
 
 With this situational toggle implemented, the PID/PI controller is able to handle most discontinuities elegantly, and the car travels smoothly where it would otherwise jerk suddenly.
 
